@@ -120,6 +120,7 @@ def double_and_add(x: int, g: tuple):
 if __name__ == '__main__':
     # 개인키 생성
     text, private_key = generate_key()
+    private_key = 0x771ab89947b6e39e1aaa7610085e5657e1eef2da7ccdf7af7d35b0413e661d38
     # 공개키 계산
     public_key = double_and_add(private_key, G)
 
