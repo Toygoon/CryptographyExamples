@@ -8,6 +8,7 @@ contract Auction {
     address payable public owner;
     address payable public buyer;
     bool public isActive;
+    mapping(address => uint) public refunds;
 
     // 최대 입찰 가격이 바뀔 때마다, 입찰자와 입찰 가격을 event에 기록하라.
     event PriceChanged(address payable _address, uint _price);
@@ -57,18 +58,30 @@ contract Auction {
             isActive = false;
         }
 
-        if (currentPrice > 0) {
+        if (buyer != address(0)) {
             // 이전의 최대 입찰 가격을 제시한 입찰자에게는 입찰 금액을 즉시 전송한다.
-            payable(msg.sender).transfer(currentPrice);
-            buyer.transfer(currentPrice);
+            refunds[buyer] += currentPrice;
         }
 
         // 입찰 가격을 최대가격에 등록하고, 입찰자도 기록한다.
         buyer = payable(msg.sender);
         currentPrice = msg.value;
-        payable(address(this)).transfer(currentPrice);
         // 최대 입찰 가격이 바뀔 때마다, 입찰자와 입찰 가격을 event에 기록하라.
         emit PriceChanged(buyer, currentPrice);
+    }
+
+    function withdraw() public {
+        // 환불할 금액이 있는지 확인
+        uint refundAmount = refunds[msg.sender];
+        require(refundAmount > 0, "No refunds to be made.");
+
+        // mapping 정보 수정
+        // 금액을 전송하기 전에 mapping 정보를 수정
+        // 이는 re-entrancy 공격을 방지하기 위함이다.
+        refunds[msg.sender] = 0;
+
+        (bool success, ) = msg.sender.call{value: refundAmount}("");
+        require(success, "Failed to send refund.");
     }
 
     function finish() public isOwner {
@@ -112,5 +125,9 @@ contract Buyer {
 
     function bid() public payable {
         auction.bid{value: msg.value}();
+    }
+
+    function claimRefund() public {
+        auction.withdraw();
     }
 }
