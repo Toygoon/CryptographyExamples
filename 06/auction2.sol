@@ -117,7 +117,6 @@ contract Owner {
 
 contract Buyer {
     Auction public auction;
-    event Log(uint);
 
     constructor(address _auction) {
         auction = Auction(payable(_auction));
